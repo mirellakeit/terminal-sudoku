@@ -64,7 +64,21 @@ def draw(m):
     print(final_matrix)
 
 
+#main loop:
+game_going_on = True
+valid_move = True
 f = open("python3 sudoku.py arq_01_cfg.txt", "r")
 turn_file_to_matrix(f)
 f.close()
-draw(m)
+while game_going_on:
+    draw(m)
+    move = str(input("Type collumn, line, and value you want to input in the format 'column,line:value' "))
+    move.strip(" ")
+
+    col = letters_for_numbers[move[0].upper()]
+    lin = str(move[2])
+    value = str(move[4])
+
+    fill_position(int(lin), int(col), int(value))
+
+
