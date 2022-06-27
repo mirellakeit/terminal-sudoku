@@ -1,9 +1,5 @@
 import sys
 
-'''
-Well, the lines are arranged from 1 to 9 and the columns are arranged from A to I, henceforth, I will create a dictionary
-to correspond each one of these 9 letters to a corresponding number from 0 to 8.
-'''
 letters_for_numbers = {
     "A": 0,
     "B": 1,
@@ -16,12 +12,6 @@ letters_for_numbers = {
     "I": 8
 }
 
-'''
-this function creates a matrix with a given number of lines, columns, and a predetermined value at each Aij.
-which means, it serves the sole purpose of making my life easier therefront
-I will then, create a 9x9 matrix (just like the sudoku board) in which each Aij is a blank space.
-'''
-
 
 def matrix(lins, cols, val_inic):
     a = [[val_inic] * cols for _ in range(lins)]
@@ -30,71 +20,40 @@ def matrix(lins, cols, val_inic):
 
 m = matrix(9, 9, ' ')
 
-''' 
-this is just a simple function to fill a position Aij with given i, j and value.
-since the player will input a value from 1 to 9 and the matrix goes from 0 to 8, i will decrease one from the
-given line value.
-'''
-
 
 def fill_position(line, col, value):
     m[line - 1][col] = value
 
 
-'''
-now, this function serves two purposes:
-1: given a .txt document, the function will read each line from the file and put it to its corresponding matrix position
-folowing the 'column,line:value' format.
-2: count how many line where there, so it can check if it's beetween the [1, 80] interval. I did this by creating a boolean
-beforehand, which is false. If the number of lines is right, the boolean will be true, and the show goes on.
-'''
+def draw(m):
+    final_matrix = "       A       B       C        D       E       F        G       H       I    \n"
+    for i in range(9):
+        for j in range(9):
+            if j == 0:
+                if i % 3 != 0:
+                    final_matrix += '  ++-------+-------+-------++-------+-------+-------++-------+-------+-------++\n'
+                else:
+                    final_matrix += '  ++=======+=======+=======++=======+=======+=======++=======+=======+=======++\n'
+                final_matrix += "%s ||   " % (i + 1) + str(m[i][j]) + "   |   "
+            elif j == 8:
+                final_matrix += str(m[i][j]) + "   || %s\n" % (i + 1)
+            elif (j + 1) % 3 == 0:
+                final_matrix += str(m[i][j]) + "   "
+            elif j % 3 == 0:
+                final_matrix += "||   " + str(m[i][j]) + "   |   "
+            else:
+                final_matrix += str(m[i][j]) + "   |   "
 
-beetween_one_and_eighty = False
-first_tips = []
-
-
-def turn_file_to_matrix(f):
-    global beetween_one_and_eighty
-    global first_tips
-    counter = 0
-    for given_numbers in f:
-        given_numbers.strip(" ")
-        given_line = int(given_numbers[2])
-        given_column = letters_for_numbers[str(given_numbers[0]).upper()]
-        given_value = int(given_numbers[4])
-        counter += 1
-        first_tips.append(f'm[{given_line - 1}][{given_column}]')
-        fill_position(given_line, given_column, given_value)
-    if 1 <= counter <= 80:
-        beetween_one_and_eighty = True
+    final_matrix += '  ++=======+=======+=======++=======+=======+=======++=======+=======+=======++\n'
+    final_matrix += "       A       B       C        D       E       F        G       H       I    \n"
+    print(final_matrix)
 
 
-'''
-Then, I created this function, which receives the previous boolean, if this boolean is false, the program will be terminated 
-'''
-
-
-def check_number_of_tips(b):
-    if not b:
-        sys.exit("The quantity of tips you gave is not between the interval [1, 80]. Try Again")
-
-
-'''
-Now, we gotta check repetitions between a given line, column and square
-
-the functions are pretty straight-foward, it may take some time to understand because you gotta find a proper mathematical 
-implementation for the loops, in each one of these three scenarios, but, after quite some time (specialy in the
-'check_squares_repetition' one), it all worked out. :)
-
-I also had these three booleans beforehand, 'line_repetition', 'column_repetition' and 'square_repetition' which were all
-set to False. If the function finds it true, it will put a "True" value in them.
-
-(I honestly feel like a genius for making these functions, but we can ignore that lol)
-'''
+invalid_move = False
+has_repetition = False
 line_repetition = False
 column_repetition = False
 square_repetition = False
-position_filled_by_tip = False
 
 
 def check_line_repetition(m):
@@ -141,141 +100,185 @@ def check_square_repetition(m):
     return square_repetition
 
 
-def check_if_position_has_a_tip(line, col):
-    global position_filled_by_tip
-    position_to_try = f'm[{line}][{col}]'
-    for i in first_tips:
-        if str(i) == str(position_to_try):
-            position_filled_by_tip = True
-    return position_filled_by_tip
+def check_repetition(m):
+    global has_repetition
+    global square_repetition
+    global column_repetition
+    global line_repetition
+    check_line_repetition(m)
+    check_column_repetition(m)
+    check_square_repetition(m)
+    has_repetition = square_repetition or column_repetition or line_repetition
+    square_repetition = False
+    column_repetition = False
+    line_repetition = False
+
+
+delete = False
+fill = False
+beetween_one_and_eighty = True
+counter = 0
+first_tips = []
+game_progression = []
+
+
+def test_and_fill_file(move):
+    global invalid_move
+    if (move[0] in letters_for_numbers) and (move[1] == ',') and (move[3] == ':') and (1 <= int(move[4]) <= 9):
+        fill_position((int(move[2])), letters_for_numbers[move[0]], move[4])
+        first_tips.append(f'[{move[0].upper()}][{move[2]}]')
+    else:
+        invalid_move = True
+
+
+def test_and_delete(move):
+    global invalid_move
+    global counter
+    global game_progression
+    move = move.upper()
+    move_as_a_string = f'[{move[1]}][{move[3]}]'
+    if (move[0] == 'D') and (move[2] == ',') and (move[1] in letters_for_numbers):
+        fill_position((int(move[3])), letters_for_numbers[move[1]], ' ')
+
+        try:
+            if move_as_a_string in game_progression:
+                game_progression.remove(move_as_a_string)
+            else:
+                first_tips.remove(move_as_a_string)
+            counter -= 1
+        except ValueError:
+            print("This cell already has nothing in it!")
+    else:
+        invalid_move = True
+
+
+def format_file_test_and_play(move):
+    global invalid_move
+    move = move.replace(" ", "").replace("\n", "").upper()
+
+    if ',' in move:
+        if len(move) == 5:
+            test_and_fill_file(move)
+        if len(move) == 4:
+            test_and_delete(move)
+    else:
+        invalid_move = True
+
+
+def turn_file_to_matrix(file):
+    global beetween_one_and_eighty
+    global invalid_move
+    global counter
+    global first_tips
+    for given_numbers in file:
+        if given_numbers == '\n':
+            pass
+        else:
+            given_numbers = given_numbers.upper().replace(" ", "")
+            format_file_test_and_play(given_numbers)
+            if invalid_move:
+                print('The move %s is invalid' % given_numbers)
+            invalid_move = False
+            counter += 1
+
+
+def check_interval(c):
+    global beetween_one_and_eighty
+    if 1 <= c <= 80:
+        beetween_one_and_eighty = False
+
+
+def check_file(file):
+    global beetween_one_and_eighty
+    global has_repetition
+    global invalid_move
+    turn_file_to_matrix(file)
+    check_repetition(m)
+    check_interval(counter)
+    if beetween_one_and_eighty:
+        draw(m)
+        beetween_one_and_eighty = False
+        sys.exit("The number of tips in the file is not beetween the [1, 80] interval.")
+    if has_repetition:
+        draw(m)
+        has_repetition = False
+        sys.exit("There's are invalid moves within this file.")
+
+
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+def test_and_fill_input(move):
+    global invalid_move
+    global game_progression
+    global has_repetition
+    move_as_a_string = f'[{move[0]}][{move[2]}]'
+    if (move[0] in letters_for_numbers) and (move[1] == ',') and (move[3] == ':') and (1 <= int(move[4]) <= 9):
+        fill_position((int(move[2])), letters_for_numbers[move[0]], move[4])
+        check_repetition(m)
+        if has_repetition:
+            fill_position(int(move[2]), letters_for_numbers[move[0]], " ")
+            if move_as_a_string in game_progression:
+                game_progression.remove(move_as_a_string)
+        else:
+            game_progression.append(move_as_a_string)
+    else:
+        invalid_move = True
+
+
+def check_input(move):
+    global invalid_move
+    global first_tips
+    move = move.replace(" ", "").upper()
+    if ',' in move:
+        if len(move) == 5:
+            move_checker = f'[{move[0]}][{move[2]}]'
+            if move_checker in first_tips:
+                print("You can't place a number where a tip is already.")
+            else:
+                test_and_fill_input(move)
+
+        elif len(move) == 4:
+            move_checker = f'[{move[1]}][{move[3]}]'
+            if move_checker in first_tips:
+                print("You can't delete a place where a tip is.")
+            else:
+                test_and_delete(move)
+        else:
+            invalid_move = True
+    else:
+        invalid_move = True
 
 
 f = open("arq_01_cfg.txt", "r")
-turn_file_to_matrix(f)
-check_number_of_tips(beetween_one_and_eighty)
+check_file(f)
 f.close()
-
-'''
-well, this basicaly just draws the matrix following the format specified in the project.
-'''
+draw(m)
 
 
-def draw(m):
-    final_matrix = "       A       B       C        D       E       F        G       H       I    \n"
-    for i in range(9):
-        for j in range(9):
-            if j == 0:
-                if i % 3 != 0:
-                    final_matrix += '  ++-------+-------+-------++-------+-------+-------++-------+-------+-------++\n'
-                else:
-                    final_matrix += '  ++=======+=======+=======++=======+=======+=======++=======+=======+=======++\n'
-                final_matrix += "%s ||   " % (i + 1) + str(m[i][j]) + "   |   "
-            elif j == 8:
-                final_matrix += str(m[i][j]) + "   || %s\n" % (i + 1)
-            elif (j + 1) % 3 == 0:
-                final_matrix += str(m[i][j]) + "   "
-            elif j % 3 == 0:
-                final_matrix += "||   " + str(m[i][j]) + "   |   "
-            else:
-                final_matrix += str(m[i][j]) + "   |   "
-
-    final_matrix += '  ++=======+=======+=======++=======+=======+=======++=======+=======+=======++\n'
-    final_matrix += "       A       B       C        D       E       F        G       H       I    \n"
-    print(final_matrix)
+def play(move):
+    move = move.upper()
+    global invalid_move
+    check_input(move)
+    if invalid_move:
+        print("the move '%s' is not a valid move." % move)
+    invalid_move = False
 
 
-'''
-who doesn't love functions inside functions huh?
-well, I just created a function that encapsulates the three last functions in one. It then, checks if it has repetition
-in any of those three cases, assigning it to a boolean called 'has_repetition'. After that, those three booleans I created
-previously will be set back to False, so it doesn't interfere in the future, and, in case 'has_repetition' is true, it will
-draw the thing and quit the game, with an error message saying 'try again'
 
-the thing is. the 'check_initial_repetition will check if there is a repetition WITHIN the given file.
-
-the 'check_posterior_repetition' will then, check repetitions for each move the player does, which i implemented better
-in the main loop.
-'''
+is_running = True
 
 
-def check_initial_repetition(m):
-    global square_repetition
-    global column_repetition
-    global line_repetition
-    check_line_repetition(m)
-    check_column_repetition(m)
-    check_square_repetition(m)
-    has_repetition = square_repetition or column_repetition or line_repetition
-    square_repetition = False
-    column_repetition = False
-    line_repetition = False
-
-    if has_repetition:
+def interactive_mode():
+    global is_running
+    global first_tips
+    global game_progression
+    while is_running:
+        players_move = input("Please, enter your move: ")
+        play(players_move)
+        if (len(first_tips) + len(game_progression)) == 81:
+            draw(m)
+            sys.exit("Congratulations, You have won the game!!!! \o/")
         draw(m)
-        sys.exit("Try again.")
 
 
-check_initial_repetition(m)
-
-
-def check_posterior_repetition(m):
-    global square_repetition
-    global column_repetition
-    global line_repetition
-    global valid_move
-
-    check_line_repetition(m)
-    check_column_repetition(m)
-    check_square_repetition(m)
-
-    has_repetition = square_repetition or column_repetition or line_repetition
-
-    square_repetition = False
-    column_repetition = False
-    line_repetition = False
-
-    return has_repetition
-
-
-'''
-well, that's the main loop :)
-'''
-
-
-def main():
-    game_going_on = True
-
-    f = open("arq_01_cfg.txt", "r")
-    turn_file_to_matrix(f)
-    f.close()
-    while game_going_on:
-        draw(m)
-        move = str(input("Type collumn, line, and value you want to input in the format 'column,line:value' "))
-        move = move.replace(' ', '')
-        if len(move) == 5:
-            col = letters_for_numbers[move[0].upper()]
-            lin = str(move[2])
-            value = str(move[4])
-            if check_if_position_has_a_tip((int(lin) - 1), int(col)):
-                print("you can't print on a square with a tip printed on it.")
-                position_filled_by_tip = False
-            else:
-                fill_position(int(lin), int(col), int(value))
-                if check_posterior_repetition(m):
-                    fill_position(int(lin), int(col), ' ')
-                    print("Please, try again.")
-                    check_posterior_repetition(m)
-        else:
-            if (move[0] == 'D' or move[0] == 'd')  and len(move) == 4:
-                col = letters_for_numbers[move[1].upper()]
-                line = str(move[3])
-                if check_if_position_has_a_tip((int(line) - 1), int(col)):
-                    print("You can't delete a square with a tip printed on it.")
-                else:
-                    print(int(line))
-                    print(int(col))
-                    fill_position(int(line), int(col), ' ')
-
-
-if __name__ == '__main__':
-    main()
+interactive_mode()
