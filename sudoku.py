@@ -502,7 +502,7 @@ def interactive_mode():
 
 # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 '''
-PART 4: main
+PART FIVE: main
 
 Now, the only thing left to do is to have the main loop, in which, depending on the given sys.argv given in the terminal
 will initialize the interactive or the batch mode, it will then play. and that's it.
