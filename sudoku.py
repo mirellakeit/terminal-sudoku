@@ -389,9 +389,6 @@ def check_input(move):
         invalid_move = True
 
 
-
-
-
 def play(move):
     move = move.upper()
     global invalid_move
@@ -455,7 +452,6 @@ def check_batch_move(move):
                 test_and_fill_input(move)
 
 
-
 def turn_batch_file_to_matrix(file):
     global between_one_and_eighty
     global invalid_move
@@ -485,7 +481,7 @@ def batch_mode(f):
         sys.exit("Congratulations! The grid was successfully fulfilled!! \o/")
     sys.exit("The grid has NOT been fulfilled :(")
 
-<<<<<<< Updated upstream
+
 def interactive_mode():
     global first_tips
     global game_progression
@@ -498,12 +494,11 @@ def interactive_mode():
         players_move = input("Please, enter your move: ")
         play(players_move)
 
-
         if (len(set(first_tips)) + len(set(game_progression))) == 81:
             draw(m)
             is_running = False
     sys.exit("Congratulations, You have won the game!!!!")
-=======
+
 
 # ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 '''
@@ -514,18 +509,17 @@ will initialize the interactive or the batch mode, it will then play. and that's
 
 Phew, that was a mouthful! 
 '''
->>>>>>> Stashed changes
 
 
 def main():
-
     f = open(sys.argv[1], 'r')
     check_file(f)
     f.close()
     if len(sys.argv) == 2:
         interactive_mode()
     elif len(sys.argv) == 3:
-         batch_mode(sys.argv[2])
+        batch_mode(sys.argv[2])
+
 
 if __name__ == '__main__':
     main()
