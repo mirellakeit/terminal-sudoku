@@ -19,6 +19,8 @@ def matrix(lins, cols, val_inic):
 
 
 m = matrix(9, 9, ' ')
+is_interactive_mode = False
+is_batch_mode = False
 
 
 def fill_position(line, col, value):
@@ -64,7 +66,8 @@ def check_line_repetition(m):
             if m[x][y] != ' ':
                 line_checker.append(m[x][y])
         if len(line_checker) != len(set(line_checker)):
-            print("there's a repetition in line %d" % (x + 1))
+            if is_interactive_mode:
+                print("there's a repetition in line %d" % (x + 1))
             line_repetition = True
         line_checker = []
     return line_repetition
@@ -78,7 +81,8 @@ def check_column_repetition(m):
             if m[l][k] != ' ':
                 column_checker.append(m[l][k])
         if len(column_checker) != len(set(column_checker)):
-            print("there's a repetition in column %d" % (k + 1))
+            if is_interactive_mode:
+                print("there's a repetition in column %d" % (k + 1))
             column_repetition = True
         column_checker = []
     return column_repetition
@@ -124,10 +128,15 @@ game_progression = []
 
 def test_and_fill_file(move):
     global invalid_move
+    global is_batch_mode
+
     if (move[0] in letters_for_numbers) and (move[1] == ',') and (move[3] == ':') and (1 <= int(move[4]) <= 9):
         fill_position((int(move[2])), letters_for_numbers[move[0]], move[4])
         first_tips.append(f'[{move[0].upper()}][{move[2]}]')
     else:
+        print("not ok")
+        if is_batch_mode:
+            print('The move %s is invalid' % f'({move[0]},{move[2]}) = {move[4]}')
         invalid_move = True
 
 
@@ -196,13 +205,15 @@ def check_file(file):
     check_repetition(m)
     check_interval(counter)
     if beetween_one_and_eighty:
-        draw(m)
+        if is_interactive_mode:
+            draw(m)
         beetween_one_and_eighty = False
         sys.exit("The number of tips in the file is not beetween the [1, 80] interval.")
     if has_repetition:
-        draw(m)
+        if is_interactive_mode:
+            draw(m)
         has_repetition = False
-        sys.exit("There's are invalid moves within this file.")
+        sys.exit("There are invalid moves within this file.")
 
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -217,6 +228,7 @@ def test_and_fill_input(move):
         check_repetition(m)
         if has_repetition:
             fill_position(int(move[2]), letters_for_numbers[move[0]], " ")
+            invalid_move = True
             if move_as_a_string in game_progression:
                 game_progression.remove(move_as_a_string)
         else:
@@ -249,36 +261,94 @@ def check_input(move):
         invalid_move = True
 
 
-f = open("arq_01_cfg.txt", "r")
-check_file(f)
-f.close()
-draw(m)
+
 
 
 def play(move):
     move = move.upper()
     global invalid_move
-    check_input(move)
+    message_error = ("the move %s is not a valid move" % move)
+    try:
+        check_input(move)
+    except ValueError:
+        print(message_error)
     if invalid_move:
-        print("the move '%s' is not a valid move." % move)
+        print(message_error)
     invalid_move = False
 
 
+# //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+def check_batch_move(move):
+    global invalid_move
+    global first_tips
+    move = move.upper().replace(" ", "").replace("\n", "")
+    if ',' in move:
+        if len(move) == 5:
+            move_checker = f'[{move[0]}][{move[2]}]'
+            if move_checker in first_tips:
+                invalid_move = True
+            else:
+                test_and_fill_input(move)
 
-is_running = True
 
+
+def turn_batch_file_to_matrix(file):
+    global beetween_one_and_eighty
+    global invalid_move
+    global counter
+    global first_tips
+    for given_numbers in file:
+        if given_numbers == '\n':
+            pass
+        else:
+            given_numbers = given_numbers.upper().replace(" ", "")
+            check_batch_move(given_numbers)
+            if invalid_move:
+                print('The move %s is invalid' % f'({given_numbers[0]},{given_numbers[2]}) = {given_numbers[4]}')
+            invalid_move = False
+
+
+def batch_mode(f):
+    global is_batch_mode
+    global game_progression
+    global first_tips
+    is_batch_mode = True
+    file = open(f, 'r')
+    turn_batch_file_to_matrix(file)
+    file.close()
+
+    if len(set(first_tips)) + len(set(game_progression)) == 81:
+        sys.exit("The grid was successfully fulfilled!")
+    sys.exit("The grid has NOT been fulfilled :(")
 
 def interactive_mode():
-    global is_running
     global first_tips
     global game_progression
+    global first_tips
+    global is_interactive_mode
+    is_interactive_mode = True
+    is_running = True
     while is_running:
+        draw(m)
         players_move = input("Please, enter your move: ")
         play(players_move)
-        if (len(first_tips) + len(game_progression)) == 81:
+
+
+        if (len(set(first_tips)) + len(set(game_progression))) == 81:
             draw(m)
-            sys.exit("Congratulations, You have won the game!!!! \o/")
-        draw(m)
+            is_running = False
+    sys.exit("Congratulations, You have won the game!!!!")
 
 
-interactive_mode()
+def main():
+
+    f = open(sys.argv[1], 'r')
+    check_file(f)
+    f.close()
+    if len(sys.argv) == 2:
+        interactive_mode()
+    elif len(sys.argv) == 3:
+         batch_mode(sys.argv[2])
+
+if __name__ == '__main__':
+    main()
