@@ -228,6 +228,7 @@ def test_and_fill_input(move):
         check_repetition(m)
         if has_repetition:
             fill_position(int(move[2]), letters_for_numbers[move[0]], " ")
+            invalid_move = True
             if move_as_a_string in game_progression:
                 game_progression.remove(move_as_a_string)
         else:
@@ -260,9 +261,7 @@ def check_input(move):
         invalid_move = True
 
 
-f = open("arq_01_cfg.txt", "r")
-check_file(f)
-f.close()
+
 
 
 def play(move):
@@ -279,6 +278,19 @@ def play(move):
 
 
 # //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+def check_batch_move(move):
+    global invalid_move
+    global first_tips
+    move = move.upper().replace(" ", "").replace("\n", "")
+    if ',' in move:
+        if len(move) == 5:
+            move_checker = f'[{move[0]}][{move[2]}]'
+            if move_checker in first_tips:
+                invalid_move = True
+            else:
+                test_and_fill_input(move)
+
+
 
 def turn_batch_file_to_matrix(file):
     global beetween_one_and_eighty
@@ -290,15 +302,16 @@ def turn_batch_file_to_matrix(file):
             pass
         else:
             given_numbers = given_numbers.upper().replace(" ", "")
-            format_file_test_and_play(given_numbers)
+            check_batch_move(given_numbers)
             if invalid_move:
                 print('The move %s is invalid' % f'({given_numbers[0]},{given_numbers[2]}) = {given_numbers[4]}')
             invalid_move = False
-            counter += 1
 
 
 def batch_mode(f):
     global is_batch_mode
+    global game_progression
+    global first_tips
     is_batch_mode = True
     file = open(f, 'r')
     turn_batch_file_to_matrix(file)
@@ -306,25 +319,36 @@ def batch_mode(f):
 
     if len(set(first_tips)) + len(set(game_progression)) == 81:
         sys.exit("The grid was successfully fulfilled!")
-
+    sys.exit("The grid has NOT been fulfilled :(")
 
 def interactive_mode():
-    global is_running
     global first_tips
     global game_progression
     global first_tips
     global is_interactive_mode
     is_interactive_mode = True
-    while True:
+    is_running = True
+    while is_running:
         draw(m)
         players_move = input("Please, enter your move: ")
         play(players_move)
 
+
         if (len(set(first_tips)) + len(set(game_progression))) == 81:
             draw(m)
-            sys.exit("Congratulations, You have won the game!!!! \o/")
-        draw(m)
+            is_running = False
+    sys.exit("Congratulations, You have won the game!!!!")
 
 
-# interactive_mode()
-batch_mode('arq_01_jog.txt')
+def main():
+
+    f = open(sys.argv[1], 'r')
+    check_file(f)
+    f.close()
+    if len(sys.argv) == 2:
+        interactive_mode()
+    elif len(sys.argv) == 3:
+         batch_mode(sys.argv[2])
+
+if __name__ == '__main__':
+    main()
