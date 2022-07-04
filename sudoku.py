@@ -98,6 +98,7 @@ tell whether a move is or isn't invalid :)
 '''
 is_interactive_mode = False
 is_batch_mode = False
+
 line_repetition = False
 column_repetition = False
 square_repetition = False
@@ -158,7 +159,8 @@ def check_square_repetition(m):
                     if m[x][y] != ' ':
                         square_checker.append(m[x][y])
             if len(square_checker) != len(set(square_checker)):
-                print("there's a repetition in square %d" % ((col_multiplier + 1) + (3 * line_multiplier)))
+                if is_interactive_mode:
+                    print("there's a repetition in square %d" % ((col_multiplier + 1) + (3 * line_multiplier)))
                 square_repetition = True
             square_checker = []
     return square_repetition
@@ -199,7 +201,7 @@ the player's moves.
 delete = False
 fill = False
 counter = 0
-between_one_and_eighty = True
+not_between_one_and_eighty = True
 first_tips = []
 game_progression = []
 
@@ -275,7 +277,7 @@ def format_file_test_and_play(move):
 
 
 def turn_file_to_matrix(file):
-    global between_one_and_eighty
+    global not_between_one_and_eighty
     global invalid_move
     global counter
     global first_tips
@@ -292,22 +294,24 @@ def turn_file_to_matrix(file):
 
 
 def check_interval(c):
-    global between_one_and_eighty
+    global not_between_one_and_eighty
     if 1 <= c <= 80:
-        between_one_and_eighty = False
+        not_between_one_and_eighty = False
 
 
 def check_file(file):
-    global between_one_and_eighty
+    global not_between_one_and_eighty
     global has_repetition
     global invalid_move
+    global is_batch_mode
+    global is_interactive_mode
     turn_file_to_matrix(file)
     check_repetition(m)
     check_interval(counter)
-    if between_one_and_eighty:
+    if not_between_one_and_eighty:
         if is_interactive_mode:
             draw(m)
-        between_one_and_eighty = False
+        not_between_one_and_eighty = False
         sys.exit("The number of tips in the file is not beetween the [1, 80] interval.")
     if has_repetition:
         if is_interactive_mode:
@@ -406,8 +410,6 @@ def interactive_mode():
     global first_tips
     global game_progression
     global first_tips
-    global is_interactive_mode
-    is_interactive_mode = True
     is_running = True
     while is_running:
         draw(m)
@@ -453,7 +455,7 @@ def check_batch_move(move):
 
 
 def turn_batch_file_to_matrix(file):
-    global between_one_and_eighty
+    global not_between_one_and_eighty
     global invalid_move
     global counter
     global first_tips
@@ -469,10 +471,8 @@ def turn_batch_file_to_matrix(file):
 
 
 def batch_mode(f):
-    global is_batch_mode
     global game_progression
     global first_tips
-    is_batch_mode = True
     file = open(f, 'r')
     turn_batch_file_to_matrix(file)
     file.close()
@@ -487,7 +487,6 @@ def interactive_mode():
     global game_progression
     global first_tips
     global is_interactive_mode
-    is_interactive_mode = True
     is_running = True
     while is_running:
         draw(m)
@@ -512,14 +511,19 @@ Phew, that was a mouthful!
 
 
 def main():
+    global is_interactive_mode
+    global is_batch_mode
     f = open(sys.argv[1], 'r')
-    check_file(f)
-    f.close()
     if len(sys.argv) == 2:
+        is_interactive_mode = True
+        check_file(f)
         interactive_mode()
-    elif len(sys.argv) == 3:
-        batch_mode(sys.argv[2])
 
+    elif len(sys.argv) == 3:
+        is_batch_mode = True
+        check_file(f)
+        batch_mode(sys.argv[2])
+    f.close()
 
 if __name__ == '__main__':
     main()
